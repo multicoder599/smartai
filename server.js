@@ -11,29 +11,29 @@ app.use(express.json());
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// System instructions for your SmartAI persona
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // Use v1beta and the most stable model name for Flash
+        // Use gemini-1.5-flash on the stable 'v1' endpoint
+        // This is the most reliable path for Tier 1 users globally
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash" 
-        }, { apiVersion: 'v1beta' });
+        }, { apiVersion: 'v1' });
 
         let chatHistory = history || [];
         
-        // Inject persona context if history is empty to avoid 400 Bad Request
+        // Inject system context into the first turn to avoid structural errors
         if (chatHistory.length === 0) {
             chatHistory.push({
                 role: "user",
-                parts: [{ text: `INSTRUCTION: ${SYSTEM_BEHAVIOR}. Respond only with 'Ready.'` }]
+                parts: [{ text: `CONTEXT: ${SYSTEM_BEHAVIOR}. Acknowledge with "System Ready."` }]
             });
             chatHistory.push({
                 role: "model",
-                parts: [{ text: "Ready." }]
+                parts: [{ text: "System Ready." }]
             });
         }
 
@@ -50,13 +50,13 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: Message processed under Paid tier 1.`);
+        console.log(`✅ Success: Connected to gemini-1.5-flash via v1.`);
         res.json({ reply: text });
         
     } catch (error) {
         console.error("❌ AI Error Details:", error.message);
         res.status(500).json({ 
-            error: "SmartAI Connection Issue", 
+            error: "SmartAI recalibrating.", 
             details: error.message 
         });
     }
@@ -64,5 +64,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} - Paid Tier Mode`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Production Mode`);
 });
