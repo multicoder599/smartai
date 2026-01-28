@@ -5,25 +5,26 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(cors({ origin: 'https://smartproai.netlify.app' }));
+app.use(cors({ origin: 'https://smartproproai.netlify.app' }));
 app.use(express.json());
 
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Neutral instructions for the AI persona
+// Neutral instructions
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // SWITCH: Using v1beta where gemini-1.5-flash is globally available
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
+        // FIX: Using the absolute versioned ID 'gemini-1.5-flash-002'
+        // This is the most stable production-ready ID for Paid Tier users.
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-002" }, { apiVersion: 'v1beta' });
 
         let chatHistory = history || [];
         
-        // If it's a new chat, inject the persona as the very first turn
+        // Inject persona into history
         if (chatHistory.length === 0) {
             chatHistory.push({
                 role: "user",
@@ -48,7 +49,7 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: SmartAI responded using v1beta.`);
+        console.log(`✅ Success: SmartAI responded using version 002.`);
         res.json({ reply: text });
         
     } catch (error) {
@@ -62,5 +63,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} - Final Configuration`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Absolute Versioning Mode`);
 });
