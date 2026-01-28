@@ -5,14 +5,12 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. CORS Configuration
 app.use(cors({
     origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
-// 2. API Key Check
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
     console.error("❌ FATAL ERROR: GEMINI_API_KEY is missing.");
@@ -20,18 +18,20 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 3. System Instruction String
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // FIX: Reverting to v1beta ensures the 'systemInstruction' field is mapped correctly.
-        // Google Cloud Billing (Paid Tier) works across both v1 and v1beta.
+        // UPGRADED: Using the specific versioned model name
+        // This bypasses alias routing issues that cause 404 errors.
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
-            systemInstruction: SYSTEM_BEHAVIOR
+            model: "models/gemini-1.5-flash-001", // Fully qualified name
+            systemInstruction: {
+                role: "system",
+                parts: [{ text: SYSTEM_BEHAVIOR }]
+            }
         }, { apiVersion: 'v1beta' }); 
 
         const chat = model.startChat({
@@ -47,13 +47,11 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Message processed successfully.`);
+        console.log(`✅ Success: Message processed.`);
         res.json({ reply: text });
         
     } catch (error) {
         console.error("❌ AI Error Details:", error.message);
-        
-        // If the error persists, fallback to a version without systemInstruction
         res.status(500).json({ 
             error: "SmartAI recalibrating.", 
             details: error.message 
