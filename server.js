@@ -11,25 +11,25 @@ app.use(express.json());
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// System instructions for your SmartAI persona
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // FIX: Using the absolute versioned ID 'gemini-1.5-flash-001' on v1beta
-        // v1beta is more reliable for 'flash' models in many regions currently.
+        // Use v1beta and the most stable model name for Flash
         const model = genAI.getGenerativeModel({ 
-            model: "models/gemini-1.5-flash-001" 
+            model: "gemini-1.5-flash" 
         }, { apiVersion: 'v1beta' });
 
         let chatHistory = history || [];
         
-        // Inject instructions into history for compatibility
+        // Inject persona context if history is empty to avoid 400 Bad Request
         if (chatHistory.length === 0) {
             chatHistory.push({
                 role: "user",
-                parts: [{ text: `INSTRUCTIONS: ${SYSTEM_BEHAVIOR}. Respond with 'Ready.'` }]
+                parts: [{ text: `INSTRUCTION: ${SYSTEM_BEHAVIOR}. Respond only with 'Ready.'` }]
             });
             chatHistory.push({
                 role: "model",
@@ -50,13 +50,13 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: Message processed using explicit model ID.`);
+        console.log(`✅ Success: Message processed under Paid tier 1.`);
         res.json({ reply: text });
         
     } catch (error) {
         console.error("❌ AI Error Details:", error.message);
         res.status(500).json({ 
-            error: "SmartAI recalibrating.", 
+            error: "SmartAI Connection Issue", 
             details: error.message 
         });
     }
@@ -64,5 +64,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} - Absolute ID Mode`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Paid Tier Mode`);
 });
