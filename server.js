@@ -5,54 +5,63 @@ require('dotenv').config();
 
 const app = express();
 
+// 1. Production CORS Policy
 app.use(cors({
     origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
+// 2. API Key Verification
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
-    console.error("❌ FATAL ERROR: GEMINI_API_KEY is not defined.");
+    console.error("❌ FATAL ERROR: GEMINI_API_KEY is missing from environment variables.");
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// --- 🧠 NEUTRAL SYSTEM INSTRUCTIONS ---
+// 3. System Instructions (Neutral & Smart)
 const SYSTEM_BEHAVIOR = `
-    You are SmartAI, a helpful and highly capable AI assistant. 
-    Provide clear, accurate, and concise responses. 
-    When providing code, use Markdown formatting.
-    Maintain a professional yet friendly tone.
+    You are SmartAI, a professional and highly capable digital assistant. 
+    Provide clear, technically accurate, and concise responses. 
+    Always use Markdown for code snippets. 
+    If you don't know an answer, admit it politely rather than hallucinating.
 `;
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // UPGRADED: Using Gemini 2.0 Flash for better availability and performance
+        // Use the standard stable model identifier
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash-8b", 
+            model: "gemini-1.5-flash", 
             systemInstruction: SYSTEM_BEHAVIOR 
         });
 
+        // Initialize chat with history provided by the frontend
         const chat = model.startChat({
             history: history || [],
             generationConfig: {
-                temperature: 0.7, 
+                temperature: 0.7,
                 topP: 0.95,
-                maxOutputTokens: 4096, // Increased for longer, more detailed answers
+                maxOutputTokens: 2048, 
             },
         });
 
+        // Process message
         const result = await chat.sendMessage(message);
         const response = await result.response;
         const text = response.text();
 
+        // Log successful interaction in Render console
+        console.log(`✅ Success: Message received. Response sent.`);
+
         res.json({ reply: text });
         
     } catch (error) {
-        console.error("AI Error Detailed:", error);
+        // Detailed logging for Render Dashboard
+        console.error("❌ AI Error Details:", error.message);
+        
         res.status(500).json({ 
             error: "SmartAI is currently recalibrating.", 
             details: error.message 
