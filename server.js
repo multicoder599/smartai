@@ -5,17 +5,15 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. Production-ready CORS
 app.use(cors({
     origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
-// Verify API Key exists on startup
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
-    console.error("❌ FATAL ERROR: GEMINI_API_KEY is not defined in Environment Variables.");
+    console.error("❌ FATAL ERROR: GEMINI_API_KEY is not defined.");
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -24,30 +22,27 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
-        // OLD: const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-// NEW:
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-        // IMPORTANT: Must await the generation
+        // UPDATED: Switching to Gemini 3 Flash (Preview) for 2026 support
+        // Other options: "gemini-3-pro-preview" or "gemini-2.5-flash"
+        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+        
         const result = await model.generateContent(message);
         const response = await result.response;
         const text = response.text();
 
-        // Send successful response back
         res.json({ reply: text });
         
     } catch (error) {
-        // This will print the SPECIFIC error in your Render Logs tab
         console.error("AI Error Detailed:", error);
         
+        // Check for specific 404/retirement errors in the response
         res.status(500).json({ 
-            error: "Internal Server Error", 
+            error: "SmartAI is having trouble processing that request.", 
             details: error.message 
         });
     }
 });
 
-// Render dynamic port binding
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 SmartAI Backend Live on Port ${PORT}`);
