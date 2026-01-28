@@ -11,23 +11,21 @@ app.use(express.json());
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// The rules for your AI
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // 1. Use the absolute stable production endpoint (v1)
-        // 2. Use the most standard model name available
+        // FIX: Using the absolute versioned ID 'gemini-1.5-flash-001' on v1beta
+        // v1beta is more reliable for 'flash' models in many regions currently.
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash" 
-        }, { apiVersion: 'v1' });
+            model: "models/gemini-1.5-flash-001" 
+        }, { apiVersion: 'v1beta' });
 
         let chatHistory = history || [];
         
-        // 3. Inject instructions into history if it's a new chat
-        // This avoids the "Unknown name systemInstruction" error on v1
+        // Inject instructions into history for compatibility
         if (chatHistory.length === 0) {
             chatHistory.push({
                 role: "user",
@@ -52,7 +50,7 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: Message processed via v1 Stable.`);
+        console.log(`✅ Success: Message processed using explicit model ID.`);
         res.json({ reply: text });
         
     } catch (error) {
@@ -66,5 +64,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} - Production v1 Mode`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Absolute ID Mode`);
 });
