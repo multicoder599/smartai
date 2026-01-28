@@ -36,20 +36,26 @@ const SYSTEM_BEHAVIOR = `
 
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message } = req.body;
+        // Destructure message and history from the request body
+        const { message, history } = req.body;
         
-        // Configuration to make the AI more factual and less "random"
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-3-flash-preview",
-            systemInstruction: SYSTEM_BEHAVIOR,
+            model: "gemini-3-flash-preview", // Staying on the 2026 standard
+            systemInstruction: SYSTEM_BEHAVIOR 
+        });
+
+        // --- NEW: Initialize a chat session with the history ---
+        const chat = model.startChat({
+            history: history || [], // Defaults to empty array if first message
             generationConfig: {
-                temperature: 0.4, // Lower temperature makes it more focused on the facts
+                temperature: 0.4,
                 topP: 0.8,
                 maxOutputTokens: 2048,
-            }
+            },
         });
-        
-        const result = await model.generateContent(message);
+
+        // Use sendMessage instead of generateContent for history support
+        const result = await chat.sendMessage(message);
         const response = await result.response;
         const text = response.text();
 
