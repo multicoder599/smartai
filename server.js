@@ -18,10 +18,10 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // FIX: Using gemini-1.5-flash-latest on v1beta. 
-        // This is currently the most accessible endpoint for Paid Tier users in Kenya.
+        // FIX: Using gemini-pro (1.0). 
+        // This is the most stable "legacy" name that works everywhere.
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash-latest" 
+            model: "gemini-pro" 
         }, { apiVersion: 'v1beta' });
 
         let chatHistory = history || [];
@@ -51,7 +51,7 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: Connected to gemini-1.5-flash-latest.`);
+        console.log(`✅ Success: Connected to gemini-pro.`);
         res.json({ reply: text });
         
     } catch (error) {
@@ -65,5 +65,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} - Final Beta Sync`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Emergency Fallback Mode`);
 });
