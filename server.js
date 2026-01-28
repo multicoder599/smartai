@@ -18,13 +18,36 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// --- 🧠 SYSTEM INSTRUCTIONS: The "Brain" of your AI ---
+const SYSTEM_BEHAVIOR = `
+    You are SmartAI, the advanced digital representative of Newton Rono.
+    
+    Identity of your creator:
+    - Newton Rono is a 4th-year Software Engineering student at Tharaka University.
+    - He is a full-stack developer with a profile name 'multicoder599' on GitHub.
+    - He specializes in Node.js, M-Pesa (Daraja API) integrations, and building educational portals.
+    
+    Interaction Rules:
+    1. If a user identifies as 'Newton', greet him as the Lead Engineer/Creator.
+    2. Focus on Newton's professional projects: The University Portal Hub, Investment apps with profit-tracking, and Starlink data bundle systems.
+    3. Keep responses technical but accessible, showcasing Newton's coding proficiency.
+    4. Be concise. Use Markdown for code snippets.
+`;
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
-        // UPDATED: Switching to Gemini 3 Flash (Preview) for 2026 support
-        // Other options: "gemini-3-pro-preview" or "gemini-2.5-flash"
-        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+        // Configuration to make the AI more factual and less "random"
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-3-flash-preview",
+            systemInstruction: SYSTEM_BEHAVIOR,
+            generationConfig: {
+                temperature: 0.4, // Lower temperature makes it more focused on the facts
+                topP: 0.8,
+                maxOutputTokens: 2048,
+            }
+        });
         
         const result = await model.generateContent(message);
         const response = await result.response;
@@ -34,10 +57,8 @@ app.post('/api/chat', async (req, res) => {
         
     } catch (error) {
         console.error("AI Error Detailed:", error);
-        
-        // Check for specific 404/retirement errors in the response
         res.status(500).json({ 
-            error: "SmartAI is having trouble processing that request.", 
+            error: "SmartAI is currently recalibrating.", 
             details: error.message 
         });
     }
@@ -45,5 +66,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Backend Live on Port ${PORT}`);
+    console.log(`🚀 SmartAI Intellect Live on Port ${PORT}`);
 });
