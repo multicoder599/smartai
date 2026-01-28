@@ -5,63 +5,57 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. Production CORS Policy
 app.use(cors({
     origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
-// 2. API Key Verification
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
-    console.error("❌ FATAL ERROR: GEMINI_API_KEY is missing from environment variables.");
+    console.error("❌ FATAL ERROR: GEMINI_API_KEY is missing.");
 }
 
+// 1. Initialize with v1 endpoint for Paid Tier stability
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 3. Neutral System Instructions
 const SYSTEM_BEHAVIOR = `
-    You are SmartAI, a helpful, professional, and highly capable AI assistant. 
+    You are SmartAI, a professional and highly capable AI assistant. 
     Provide clear, accurate, and concise responses. 
-    Always use Markdown for code snippets and technical formatting.
-    If a query is ambiguous, ask for clarification.
-    Stay objective and avoid referring to specific personal history unless asked.
+    Always use Markdown for code snippets.
+    Maintain a professional yet friendly tone.
 `;
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // UPGRADED: Using Gemini 2.0 Flash (Stable for Paid Tier)
+        // 2. FORCE 'v1' API Version to avoid Free Tier 'v1beta' loops
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.0-flash", 
             systemInstruction: SYSTEM_BEHAVIOR 
-        });
+        }, { apiVersion: 'v1' }); 
 
-        // Initialize chat with history
         const chat = model.startChat({
             history: history || [],
             generationConfig: {
                 temperature: 0.7,
                 topP: 0.95,
-                maxOutputTokens: 4096, // Increased for detailed Paid Tier responses
+                maxOutputTokens: 4096,
             },
         });
 
-        // Process message
         const result = await chat.sendMessage(message);
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Paid Tier Success: Request processed.`);
-
+        console.log(`✅ Paid Tier v1 Success: Response delivered.`);
         res.json({ reply: text });
         
     } catch (error) {
         console.error("❌ AI Error Details:", error.message);
         
-        // Handle potential errors gracefully
+        // Return clear error if quota is still an issue
         res.status(500).json({ 
             error: "SmartAI is currently recalibrating.", 
             details: error.message 
@@ -71,5 +65,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT} (Paid Tier Enabled)`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} - Production v1 Mode`);
 });
