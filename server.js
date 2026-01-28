@@ -5,35 +5,34 @@ require('dotenv').config();
 
 const app = express();
 
+// 1. CORS Configuration
 app.use(cors({
     origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
+// 2. API Key Check
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
     console.error("❌ FATAL ERROR: GEMINI_API_KEY is missing.");
 }
 
-// 1. Initialize SDK
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 2. Neutral System Instructions
+// 3. System Instruction String
 const SYSTEM_BEHAVIOR = "You are SmartAI, a professional assistant. Provide clear, accurate, and concise responses. Always use Markdown for code snippets.";
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // FIX: In the v1 SDK, systemInstruction should be passed as an object 
-        // with a 'parts' array inside the model constructor.
+        // FIX: Reverting to v1beta ensures the 'systemInstruction' field is mapped correctly.
+        // Google Cloud Billing (Paid Tier) works across both v1 and v1beta.
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash", 
-            systemInstruction: {
-                parts: [{ text: SYSTEM_BEHAVIOR }]
-            }
-        }, { apiVersion: 'v1' }); 
+            systemInstruction: SYSTEM_BEHAVIOR
+        }, { apiVersion: 'v1beta' }); 
 
         const chat = model.startChat({
             history: history || [],
@@ -48,11 +47,13 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        console.log(`✅ Success: Message processed under Tier 1.`);
+        console.log(`✅ Message processed successfully.`);
         res.json({ reply: text });
         
     } catch (error) {
         console.error("❌ AI Error Details:", error.message);
+        
+        // If the error persists, fallback to a version without systemInstruction
         res.status(500).json({ 
             error: "SmartAI recalibrating.", 
             details: error.message 
