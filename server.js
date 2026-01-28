@@ -20,31 +20,32 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 3. System Instructions (Neutral & Smart)
+// 3. Neutral System Instructions
 const SYSTEM_BEHAVIOR = `
-    You are SmartAI, a professional and highly capable digital assistant. 
-    Provide clear, technically accurate, and concise responses. 
-    Always use Markdown for code snippets. 
-    If you don't know an answer, admit it politely rather than hallucinating.
+    You are SmartAI, a helpful, professional, and highly capable AI assistant. 
+    Provide clear, accurate, and concise responses. 
+    Always use Markdown for code snippets and technical formatting.
+    If a query is ambiguous, ask for clarification.
+    Stay objective and avoid referring to specific personal history unless asked.
 `;
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        // Use the standard stable model identifier
+        // UPGRADED: Using Gemini 2.0 Flash (Stable for Paid Tier)
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
+            model: "gemini-2.0-flash", 
             systemInstruction: SYSTEM_BEHAVIOR 
         });
 
-        // Initialize chat with history provided by the frontend
+        // Initialize chat with history
         const chat = model.startChat({
             history: history || [],
             generationConfig: {
                 temperature: 0.7,
                 topP: 0.95,
-                maxOutputTokens: 2048, 
+                maxOutputTokens: 4096, // Increased for detailed Paid Tier responses
             },
         });
 
@@ -53,15 +54,14 @@ app.post('/api/chat', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        // Log successful interaction in Render console
-        console.log(`✅ Success: Message received. Response sent.`);
+        console.log(`✅ Paid Tier Success: Request processed.`);
 
         res.json({ reply: text });
         
     } catch (error) {
-        // Detailed logging for Render Dashboard
         console.error("❌ AI Error Details:", error.message);
         
+        // Handle potential errors gracefully
         res.status(500).json({ 
             error: "SmartAI is currently recalibrating.", 
             details: error.message 
@@ -71,5 +71,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Live on Port ${PORT}`);
+    console.log(`🚀 SmartAI Live on Port ${PORT} (Paid Tier Enabled)`);
 });
