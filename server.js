@@ -5,19 +5,17 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. IMPROVED CORS: Allow your specific Netlify domain
+// 1. Production-ready CORS
 app.use(cors({
-    origin: ['https://smartproai.netlify.app', 'http://127.0.0.1:5500'], // Allows your live site and local testing
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
+    origin: 'https://smartproai.netlify.app'
 }));
 
 app.use(express.json());
 
-// 2. API KEY CHECK: Log a warning if the key is missing (check your Render logs for this)
+// Verify API Key exists on startup
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
-    console.error("❌ ERROR: GEMINI_API_KEY is not set in Environment Variables.");
+    console.error("❌ FATAL ERROR: GEMINI_API_KEY is not defined in Environment Variables.");
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -26,25 +24,30 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
-        if (!message) {
-            return res.status(400).json({ error: "Message is required" });
-        }
-
+        // Use the newest model name format for 2026
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
+        // IMPORTANT: Must await the generation
         const result = await model.generateContent(message);
         const response = await result.response;
         const text = response.text();
 
+        // Send successful response back
         res.json({ reply: text });
+        
     } catch (error) {
-        console.error("AI Error:", error);
-        res.status(500).json({ error: "SmartAI is having trouble processing that request." });
+        // This will print the SPECIFIC error in your Render Logs tab
+        console.error("AI Error Detailed:", error);
+        
+        res.status(500).json({ 
+            error: "Internal Server Error", 
+            details: error.message 
+        });
     }
 });
 
-// 3. RENDER PORT: Render uses a dynamic port; process.env.PORT is mandatory
-const PORT = process.env.PORT || 5000;
+// Render dynamic port binding
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SmartAI Server active on port ${PORT}`);
+    console.log(`🚀 SmartAI Backend Live on Port ${PORT}`);
 });
