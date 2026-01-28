@@ -24,8 +24,10 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
-        // To this:
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        // OLD: const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// NEW:
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
         // IMPORTANT: Must await the generation
         const result = await model.generateContent(message);
         const response = await result.response;
