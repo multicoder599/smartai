@@ -19,11 +19,10 @@ if (!apiKey) {
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // --- 🧠 NEUTRAL SYSTEM INSTRUCTIONS ---
-// We removed the personal bio so it answers naturally.
 const SYSTEM_BEHAVIOR = `
     You are SmartAI, a helpful and highly capable AI assistant. 
     Provide clear, accurate, and concise responses. 
-    When providing code, use Markdown formatting with appropriate language tags.
+    When providing code, use Markdown formatting.
     Maintain a professional yet friendly tone.
 `;
 
@@ -31,18 +30,18 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         
+        // UPGRADED: Using Gemini 2.0 Flash for better availability and performance
         const model = genAI.getGenerativeModel({ 
-            // To this (The stable, high-availability version):
-model: "gemini-1.5-flash",
+            model: "gemini-2.0-flash",
             systemInstruction: SYSTEM_BEHAVIOR 
         });
 
         const chat = model.startChat({
             history: history || [],
             generationConfig: {
-                temperature: 0.7, // Increased slightly for more natural/varied conversation
-                topP: 0.9,
-                maxOutputTokens: 2048,
+                temperature: 0.7, 
+                topP: 0.95,
+                maxOutputTokens: 4096, // Increased for longer, more detailed answers
             },
         });
 
